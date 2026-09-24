@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────
+   TEMA WARNA — CSS VARIABLES
+   Dark  = default / .dark class
+   Light = .light class (diatur oleh next-themes)
+───────────────────────────────────────────────────── */
+
+/* DARK MODE (default) */
+:root,
+.dark {
+  --bg-base:      #0a0d14;
+  --bg-surface:   #0e1422;
+  --bg-sunken:    #060810;
+  --border:       #1e293b;
+  --border-soft:  #0f172a;
+
+  --text-primary:   #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+
+  --scrollbar-track: #0a0d14;
+  --scrollbar-thumb: #1e293b;
+  --scrollbar-thumb-hover: #334155;
+}
+
+/* LIGHT MODE */
+.light {
+  --bg-base:      #F8FAFC;
+  --bg-surface:   #FFFFFF;
+  --bg-sunken:    #F1F5F9;
+  --border:       #E2E8F0;
+  --border-soft:  #F1F5F9;
+
+  --text-primary:   #0F172A;
+  --text-secondary: #64748B;
+  --text-muted:     #94A3B8;
+
+  --scrollbar-track: #F8FAFC;
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+}
+
+/* ─────────────────────────────────────────────────────
+   BASE STYLES
+───────────────────────────────────────────────────── */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-mono {
+    font-family: var(--font-geist-mono), 'JetBrains Mono', monospace;
+  }
+}
+
+/* ─────────────────────────────────────────────────────
+   UTILITY CLASSES BERBASIS CSS VARIABLE
+   Pakai prefix `th-` (theme) agar tidak konflik
+───────────────────────────────────────────────────── */
+.th-bg-base    { background-color: var(--bg-base); }
+.th-bg-surface { background-color: var(--bg-surface); }
+.th-bg-sunken  { background-color: var(--bg-sunken); }
+.th-border     { border-color: var(--border); }
+.th-text       { color: var(--text-primary); }
+.th-text-sub   { color: var(--text-secondary); }
+.th-text-muted { color: var(--text-muted); }
+
+/* ─────────────────────────────────────────────────────
+   SCROLLBAR STYLING
+───────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}

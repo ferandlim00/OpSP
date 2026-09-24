@@ -1,0 +1,31 @@
+package models
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type PurchaseOrder struct {
+	gorm.Model
+	PONumber   string    `gorm:"uniqueIndex;not null" json:"po_number"`
+	SupplierID uint      `gorm:"not null" json:"supplier_id"`
+	Date       time.Time `gorm:"not null" json:"date"`
+	Total      float64   `gorm:"default:0" json:"total"`
+	Note       string    `gorm:"type:text" json:"note"`
+
+	// Relasi
+	Supplier Supplier            `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
+	Items    []PurchaseOrderItem `gorm:"foreignKey:POOrderID" json:"items,omitempty"`
+}
+
+type PurchaseOrderItem struct {
+	gorm.Model
+	POOrderID  uint     `gorm:"not null" json:"po_order_id"`
+	ProductID  uint     `gorm:"not null" json:"product_id"`
+	Qty        int      `gorm:"not null" json:"qty"`
+	PriceModal *float64 `json:"price_modal"` // nullable — opsional
+
+	// Relasi
+	Product Product `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+}
