@@ -1,7 +1,23 @@
-﻿# Environment variables
+# Environment variables & Secrets
 .env
 *.env
+.env.*
+!.env.example
+!.env.production.example
 BACKEND/.env
+FRONTEND/.env*
+*.pem
+*.key
+*.crt
+*.sql
+*.bak
+
+# Uploads & Security Audit Logs
+uploads/
+BACKEND/uploads/
+logs/
+BACKEND/logs/
+*.log
 
 # Binaries
 *.exe
@@ -10,6 +26,8 @@ BACKEND/.env
 *.so
 *.dylib
 bin/
+BACKEND/propertierp-server
+BACKEND/backend
 
 # Go tests & workspace
 *.test
@@ -22,7 +40,7 @@ node_modules/
 out/
 build/
 dist/
-*.log
+*.tsbuildinfo
 
 # IDE & OS
 .vscode/

@@ -29,9 +29,12 @@ func GenerateToken(userID uint, username, role string, secretKey string, expiryH
 	return token.SignedString([]byte(secretKey))
 }
 
-// ValidateToken memvalidasi keaslian token JWT
+// ValidateToken memvalidasi keaslian token JWT & mencegah serangan alg:none / algorithm confusion
 func ValidateToken(tokenString, secretKey string) (*JWTClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok || t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, jwt.ErrSignatureInvalid
+		}
 		return []byte(secretKey), nil
 	})
 

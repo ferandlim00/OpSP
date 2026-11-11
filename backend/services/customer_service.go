@@ -1,6 +1,8 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -41,23 +43,46 @@ func (s *CustomerService) Create(input CustomerInput) (*models.Customer, error) 
 		return nil, errors.New("nama dan nomor HP wajib diisi")
 	}
 
-	var count int64
-	s.db.Model(&models.Customer{}).Count(&count)
-	code := fmt.Sprintf("CUST-%03d", count+1)
-
 	customer := models.Customer{
-		CustomerCode: code,
-		Name:         input.Name,
-		Phone:        input.Phone,
-		Email:        input.Email,
-		Address:      input.Address,
-		Note:         input.Note,
+		Name:    input.Name,
+		Phone:   input.Phone,
+		Email:   input.Email,
+		Address: input.Address,
+		Note:    input.Note,
 	}
 
-	if err := s.db.Create(&customer).Error; err != nil {
+	// Kode pelanggan diturunkan dari ID auto-increment, BUKAN dari COUNT(*).
+	// COUNT(*) tidak menghitung baris soft-delete, padahal unique index tetap
+	// berlaku untuk baris tersebut → kode lama terpakai lagi → Error 1062.
+	// ID auto-increment selalu unik, tidak pernah dipakai ulang, dan aman
+	// walau ada 2 request bersamaan.
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// Kode sementara yang unik agar lolos constraint NOT NULL + UNIQUE
+		tmp, err := tempCode()
+		if err != nil {
+			return err
+		}
+		customer.CustomerCode = tmp
+		if err := tx.Create(&customer).Error; err != nil {
+			return err
+		}
+
+		customer.CustomerCode = fmt.Sprintf("CUST-%03d", customer.ID)
+		return tx.Model(&customer).Update("customer_code", customer.CustomerCode).Error
+	})
+	if err != nil {
 		return nil, err
 	}
 	return &customer, nil
+}
+
+// tempCode menghasilkan placeholder acak, mis. "TMP-9f3a1c0b7e2d4a65"
+func tempCode() (string, error) {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return "TMP-" + hex.EncodeToString(b), nil
 }
 
 func (s *CustomerService) Update(id uint, input CustomerInput) (*models.Customer, error) {
@@ -79,5 +104,17 @@ func (s *CustomerService) Update(id uint, input CustomerInput) (*models.Customer
 }
 
 func (s *CustomerService) Delete(id uint) error {
-	return s.db.Delete(&models.Customer{}, id).Error
+	var txCount int64
+	s.db.Unscoped().Model(&models.Transaction{}).Where("customer_id = ?", id).Count(&txCount)
+	if txCount > 0 {
+		return errors.New("pelanggan tidak bisa dihapus karena memiliki riwayat transaksi")
+	}
+	res := s.db.Unscoped().Delete(&models.Customer{}, id)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return errors.New("pelanggan tidak ditemukan")
+	}
+	return nil
 }

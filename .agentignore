@@ -1,0 +1,7 @@
+backend/uploads/
+backend/go.sum
+frontend/.next/
+frontend/node_modules/
+frontend/package-lock.json
+frontend/tsconfig.tsbuildinfo
+**/.env

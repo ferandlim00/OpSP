@@ -1,0 +1,81 @@
+services:
+  # ===== DATABASE =====
+  mysql:
+    image: mysql:8.0
+    container_name: erp-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-root}
+      MYSQL_DATABASE: ${DB_NAME:-erp_db}
+      MYSQL_USER: ${DB_USER:-erp_user}
+      MYSQL_PASSWORD: ${DB_PASS:-erp_password}
+      TZ: Asia/Jakarta
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ===== BACKEND (Go API) =====
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    ports:
+      - "8080:8080"
+    environment:
+      APP_NAME: PropertyERP
+      APP_PORT: 8080
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-erp_user}
+      DB_PASS: ${DB_PASS:-erp_password}
+      DB_NAME: ${DB_NAME:-erp_db}
+      JWT_SECRET: ${JWT_SECRET:-propertierp-secret-key-change-in-production-2026}
+      JWT_EXPIRE: 24h
+      REFRESH_EXPIRE: 168h
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://frontend:3000"
+      STORE_LATITUDE: -6.2088
+      STORE_LONGITUDE: 106.8456
+      STORE_RADIUS_METERS: 500
+      TZ: Asia/Jakarta
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - erp-network
+    restart: on-failure
+
+  # ===== FRONTEND (Next.js) =====
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    container_name: erp-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    depends_on:
+      - backend
+    networks:
+      - erp-network
+    restart: on-failure
+
+networks:
+  erp-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

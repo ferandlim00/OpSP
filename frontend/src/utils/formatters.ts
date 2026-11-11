@@ -18,7 +18,7 @@ export const formatDateIndo = (dateStr: string): string => {
       month: 'short',
       year: 'numeric',
     }).format(date);
-  } catch (e) {
+  } catch {
     return dateStr;
   }
 };

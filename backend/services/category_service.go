@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strings"
 
 	"backend/models"
 
@@ -29,9 +30,13 @@ func (s *CategoryService) GetAll() ([]models.Category, error) {
 
 // 2. Tambah Kategori Baru
 func (s *CategoryService) Create(input CategoryInput) (*models.Category, error) {
+	input.Name = strings.TrimSpace(input.Name)
 	if input.Name == "" {
 		return nil, errors.New("nama kategori wajib diisi")
 	}
+
+	// Bersihkan baris sisa soft-delete (jika ada) dengan nama yang sama
+	s.db.Unscoped().Where("name = ? AND deleted_at IS NOT NULL", input.Name).Delete(&models.Category{})
 
 	// Cek apakah nama sudah ada
 	var count int64
@@ -49,6 +54,11 @@ func (s *CategoryService) Create(input CategoryInput) (*models.Category, error) 
 
 // 3. Update Kategori
 func (s *CategoryService) Update(id uint, input CategoryInput) (*models.Category, error) {
+	input.Name = strings.TrimSpace(input.Name)
+	if input.Name == "" {
+		return nil, errors.New("nama kategori wajib diisi")
+	}
+
 	var category models.Category
 	if err := s.db.First(&category, id).Error; err != nil {
 		return nil, errors.New("kategori tidak ditemukan")
@@ -61,14 +71,21 @@ func (s *CategoryService) Update(id uint, input CategoryInput) (*models.Category
 	return &category, nil
 }
 
-// 4. Hapus Kategori
+// 4. Hapus Kategori (Hard Delete dari MySQL)
 func (s *CategoryService) Delete(id uint) error {
 	// Cek apakah ada produk yang masih menggunakan kategori ini
 	var productCount int64
-	s.db.Model(&models.Product{}).Where("category_id = ?", id).Count(&productCount)
+	s.db.Unscoped().Model(&models.Product{}).Where("category_id = ?", id).Count(&productCount)
 	if productCount > 0 {
 		return errors.New("kategori tidak bisa dihapus karena masih ada produk di dalamnya")
 	}
 
-	return s.db.Delete(&models.Category{}, id).Error
+	res := s.db.Unscoped().Delete(&models.Category{}, id)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return errors.New("kategori tidak ditemukan")
+	}
+	return nil
 }

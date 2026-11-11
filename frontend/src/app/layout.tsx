@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "World Furniture ERP",
-  description: "Sistem Manajemen Toko Properti & Furniture",
+  title: "PropertiERP",
+  description: "Sistem Terpadu POS, Stok, Logistik & Keuangan",
 };
 
 export default function RootLayout({

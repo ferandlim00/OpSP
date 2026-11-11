@@ -23,7 +23,7 @@ const (
 
 type Transaction struct {
 	gorm.Model
-	TransactionNo string            `gorm:"uniqueIndex;not null" json:"transaction_no"`
+	TransactionNo string            `gorm:"size:50;uniqueIndex;not null" json:"transaction_no"`
 	CustomerID    uint              `gorm:"not null" json:"customer_id"`
 	Type          TransactionType   `gorm:"type:enum('SALE','RETURN','CANCEL');default:'SALE'" json:"type"`
 	Status        TransactionStatus `gorm:"type:enum('PENDING','PROCESSING','COMPLETED','CANCELLED');default:'PENDING'" json:"status"`
@@ -44,6 +44,8 @@ type TransactionItem struct {
 	TransactionID uint    `gorm:"not null" json:"transaction_id"`
 	ProductID     uint    `gorm:"not null" json:"product_id"`
 	Qty           int     `gorm:"not null" json:"qty"`
+	DeliveredQty  int     `gorm:"default:0" json:"delivered_qty"`
+	ReturnedQty   int     `gorm:"default:0" json:"returned_qty"`
 	Price         float64 `gorm:"not null" json:"price"`
 	Discount      float64 `gorm:"default:0" json:"discount"`
 	Subtotal      float64 `gorm:"not null" json:"subtotal"`

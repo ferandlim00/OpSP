@@ -1,6 +1,11 @@
 package utils
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"os"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 // SuccessResponse mengirim format JSON sukses yang rapi
 func SuccessResponse(c *fiber.Ctx, statusCode int, message string, data interface{}) error {
@@ -11,8 +16,13 @@ func SuccessResponse(c *fiber.Ctx, statusCode int, message string, data interfac
 	})
 }
 
-// ErrorResponse mengirim format JSON gagal
+// ErrorResponse mengirim format JSON gagal dan menyembunyikan detail error internal di mode production
 func ErrorResponse(c *fiber.Ctx, statusCode int, message string, errors interface{}) error {
+	isProd := strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production")
+	if isProd && statusCode >= fiber.StatusInternalServerError {
+		// Jangan bocorkan pesan error database / stack internal ke publik saat production
+		errors = nil
+	}
 	return c.Status(statusCode).JSON(fiber.Map{
 		"success": false,
 		"message": message,

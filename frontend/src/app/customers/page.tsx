@@ -47,6 +47,12 @@ export default function CustomersPage() {
   const [editTarget, setEditTarget] = useState<Customer | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const notify = (type: "success" | "error", text: string) => {
+    setNotice({ type, text });
+    setTimeout(() => setNotice(null), 4000);
+  };
 
   const [form, setForm] = useState<CustomerFormData>({
     name: "", phone: "", email: "", address: "",
@@ -104,8 +110,10 @@ export default function CustomersPage() {
       setFormError("");
       if (editTarget) {
         await api.put(`/customers/${editTarget.ID}`, form);
+        notify("success", `Pelanggan "${form.name}" berhasil diperbarui.`);
       } else {
         await api.post("/customers", form);
+        notify("success", `Pelanggan "${form.name}" berhasil ditambahkan.`);
       }
       setShowModal(false);
       fetchCustomers();
@@ -117,12 +125,13 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (c: Customer) => {
-    if (!confirm(`Hapus pelanggan "${c.name}"?`)) return;
+    if (!confirm(`Hapus permanen pelanggan "${c.name}" dari database MySQL?`)) return;
     try {
       await api.delete(`/customers/${c.ID}`);
+      notify("success", `Pelanggan "${c.name}" berhasil dihapus permanen dari database.`);
       fetchCustomers();
-    } catch {
-      alert("Gagal menghapus pelanggan.");
+    } catch (err: any) {
+      notify("error", err?.response?.data?.message || "Gagal menghapus pelanggan.");
     }
   };
 
@@ -134,6 +143,17 @@ export default function CustomersPage() {
         <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
         <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          {notice && (
+            <div
+              className={`px-4 py-3 rounded-xl border text-xs font-semibold ${
+                notice.type === "success"
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                  : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+              }`}
+            >
+              {notice.text}
+            </div>
+          )}
 
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
@@ -147,21 +167,21 @@ export default function CustomersPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari nama, HP, kode..."
-                  className="pl-9 pr-4 py-1.5 bg-[var(--bg-sunken)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-500 w-52"
+                  className="pl-9 pr-4 py-1.5 bg-[var(--bg-sunken)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-52"
                 />
               </div>
 
               <button
                 onClick={openCreate}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black hover:bg-amber-400 transition-all shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 Tambah
@@ -188,7 +208,7 @@ export default function CustomersPage() {
               {customers.map((cust) => (
                 <div
                   key={cust.ID}
-                  className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-3 flex flex-col justify-between hover:border-[var(--border-soft)] transition-colors"
+                  className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-3 flex flex-col justify-between hover:border-amber-500/40 transition-colors"
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -198,7 +218,7 @@ export default function CustomersPage() {
                         </div>
                         <div>
                           <h3 className="text-sm font-bold text-[var(--text-primary)]">{cust.name}</h3>
-                          <span className="text-[10px] font-mono text-[var(--text-muted)]">{cust.customer_code}</span>
+                          <span className="text-xs font-mono font-medium text-[var(--text-secondary)]">{cust.customer_code}</span>
                         </div>
                       </div>
                     </div>
@@ -247,7 +267,7 @@ export default function CustomersPage() {
       {/* Modal Tambah/Edit */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-sunken)]/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl shadow-2xl">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
               <h2 className="text-sm font-bold text-[var(--text-primary)]">
                 {editTarget ? "Edit Pelanggan" : "Tambah Pelanggan Baru"}
@@ -303,7 +323,7 @@ export default function CustomersPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 disabled:opacity-50 transition-all flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50 transition-all flex items-center gap-2"
               >
                 {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {editTarget ? "Simpan Perubahan" : "Tambah Pelanggan"}
